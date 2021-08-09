@@ -1,0 +1,36 @@
+version: 2
+
+jobs:
+  build_staging:
+    docker:
+      - image: circleci/node:10.1.0
+    working_directory: ~/src
+
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: npm install
+      - run:
+          name: Build app
+          environment:
+            - NODE_ENV: production
+            - API_LOCATION: https://
+          command: npm run build
+      - deploy:
+          name: Deploy to AWS S3
+          command: |
+            npx s3-deploy './dist/**' \
+              --cwd './dist/' \
+              --bucket Template-web \
+              --region ap-southeast-2 \
+              --cache "public, must-revalidate"
+
+workflows:
+  version: 2
+  build_deploy:
+    jobs:
+      - build_staging:
+          filters:
+            branches:
+              only: master
